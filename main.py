@@ -23,6 +23,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
         self.scorer = Scorer(score_type='svdh')
         self.case_path = ''
 
+        # 当前高亮的关节 index（JSN/BE 共用）
+        self.current_highlight_idx = None
+        # 当前选择的关节 index（用于在两个 tab 间同步 RB 状态，如需要可进一步利用）
+        self.current_joint_idx = None
 
         # ================== VTK 嵌入到 GL_Xray ==================
         self.vtkWidget = QVTKRenderWindowInteractor(self.GL_Xray)
@@ -95,6 +99,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
             {'Name': 'Ra', 'RB': self.RB_BE_16, 'CB': self.CB_BE_16, 'Point': (106, 546), 'Score_L': None, 'Score_R': None},
         ]
 
+        # ===== Reviewed 按钮 =====
+        self.PB_Reviewed.clicked.connect(self.on_reviewed_clicked)
 
         # ===== 当前使用哪个 hand model、哪个 label =====
         # 默认：tab 0 = JSN
@@ -111,8 +117,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
 
         # ================== 绑定信号 ==================
         self.action_Input.triggered.connect(self.select_input_folder)
-        self.action_Next.triggered.connect(self.write_to_scorer)
-        # --- 保存 / 打开 JSON，导出 Excel ---
         self.action_Save.triggered.connect(self.save_scores_to_json)
         self.action_Open.triggered.connect(self.load_scores_from_json)
         self.action_Output.triggered.connect(self.export_scores_to_excel)
@@ -126,7 +130,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
                 lambda _, name=idx: self.change_score(name)
             )
             item['RB'].toggled.connect(
-                lambda _, name=idx: self.select_joint(name)
+                lambda checked, name=idx: self.select_joint(name) if checked else None
             )
 
         # BE CB / RB（用同样的槽函数）
@@ -136,62 +140,107 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
                 lambda _, name=idx: self.change_score(name)
             )
             item['RB'].toggled.connect(
-                lambda _, name=idx: self.select_joint(name)
+                lambda checked, name=idx: self.select_joint(name) if checked else None
             )
 
-        # 左右手切换（这里先用 JSN 的按钮，如果 BE 也有可以再绑一次）
-        self.RB_Left_JSN.toggled.connect(lambda _, name='L': self.LorR_change(name))
-        self.RB_Right_JSN.toggled.connect(lambda _, name='R': self.LorR_change(name))
+        # 左右手切换（JSN + BE 共用逻辑）
+        self.RB_Left_JSN.toggled.connect(lambda checked, name='L': self.LorR_change(name) if checked else None)
+        self.RB_Right_JSN.toggled.connect(lambda checked, name='R': self.LorR_change(name) if checked else None)
+        self.RB_Left_BE.toggled.connect(lambda checked, name='L': self.LorR_change(name) if checked else None)
+        self.RB_Right_BE.toggled.connect(lambda checked, name='R': self.LorR_change(name) if checked else None)
 
-        self.RB_Left_BE.toggled.connect(lambda _, name='L': self.LorR_change(name))
-        self.RB_Right_BE.toggled.connect(lambda _, name='R': self.LorR_change(name))
-
-        # ======== tabWeight 切换 JSN / BE ========
+        # ======== tabWidget 切换 JSN / BE ========
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
-
         self.tabWidget.setEnabled(False)
 
+        # 初始化默认 Radio 状态
+        self.sync_lr_radio_buttons()
+
+    # --------- 通用刷新函数 ---------
+    def sync_lr_radio_buttons(self):
+        """
+        同步 JSN / BE 两个 tab 的左右手单选按钮，使其与 self.current_LorR 一致。
+        """
+        # 避免递归触发 LorR_change
+        for rb in (self.RB_Left_JSN, self.RB_Right_JSN, self.RB_Left_BE, self.RB_Right_BE):
+            rb.blockSignals(True)
+
+        if self.current_LorR == 'L':
+            self.RB_Left_JSN.setChecked(True)
+            self.RB_Left_BE.setChecked(True)
+            self.RB_Right_JSN.setChecked(False)
+            self.RB_Right_BE.setChecked(False)
+        else:
+            self.RB_Right_JSN.setChecked(True)
+            self.RB_Right_BE.setChecked(True)
+            self.RB_Left_JSN.setChecked(False)
+            self.RB_Left_BE.setChecked(False)
+
+        for rb in (self.RB_Left_JSN, self.RB_Right_JSN, self.RB_Left_BE, self.RB_Right_BE):
+            rb.blockSignals(False)
+
+    def refresh_current_view(self):
+        """
+        根据 current_hand_model / current_LorR 刷新：
+        - combobox 显示
+        - 手图显示（包括高亮）
+        """
+        hand_model = self.current_hand_model
+        LorR = self.current_LorR
+
+        for item in hand_model:
+            cb = item['CB']
+            score = item[f'Score_{LorR}']
+
+            cb.blockSignals(True)
+            if score is None or score == '':
+                cb.setCurrentIndex(-1)
+            else:
+                cb.setCurrentText(str(score))
+            cb.blockSignals(False)
+
+        self.update_hand(hand_model,
+                         highlight_idx=self.current_highlight_idx,
+                         LorR=LorR,
+                         target_label=self.current_hand_label)
+
+    # ================== scorer 相关 ==================
     def load_score(self):
-        print(self.case_path)
+        """
+        从 self.scorer 中读取当前 case_path 左右手的分数到 jsn_label_dict / be_label_dict，
+        然后刷新当前视图。
+        """
         result_L = self.scorer.find_row(self.case_path, LorR='L')[0]
         result_R = self.scorer.find_row(self.case_path, LorR='R')[0]
+
         for item in self.jsn_label_dict:
             score_key = 'JSN_' + item['Name'].replace('-', '_')
-            score = result_L[score_key]
-            item['Score_L'] = score
-            score = result_R[score_key]
-            item['Score_R'] = score
+            item['Score_L'] = result_L[score_key]
+            item['Score_R'] = result_R[score_key]
+
         for item in self.be_label_dict:
             score_key = 'BE_' + item['Name'].replace('-', '_')
-            score = result_L[score_key]
-            item['Score_L'] = score
-            score = result_R[score_key]
-            item['Score_R'] = score
+            item['Score_L'] = result_L[score_key]
+            item['Score_R'] = result_R[score_key]
 
-        self.LorR_change(LorR='L')
-        self.RB_Left_JSN.setChecked(True)
-        self.RB_Left_BE.setChecked(True)
+        # 默认切到左手
+        self.current_LorR = 'L'
+        self.sync_lr_radio_buttons()
+        self.refresh_current_view()
 
-    def write_to_scorer(self, ):
+    def write_to_scorer(self):
         """
         将 jsn_label_dict / be_label_dict 中的 Score_L 或 Score_R
         按顺序写入 scorer（顺序必须与 SVDH_TEMPLATE 一致）
         """
-        # 写入 scorer
         for LorR in ['L', 'R']:
-            # --- 根据左右手选择 Score 列名 ---
             score_key = "Score_L" if LorR == "L" else "Score_R"
 
-            # --- 先取 JSN 的分数 ---
             jsn_scores = [item[score_key] for item in self.jsn_label_dict]
-
-            # --- 再取 BE 的分数 ---
             be_scores = [item[score_key] for item in self.be_label_dict]
 
-            # 合并：顺序要和 SVDH_TEMPLATE 完全一致
             final_scores = jsn_scores + be_scores
             self.scorer.update_score(self.case_path, LorR, *final_scores)
-        self.scorer.show()
 
     # ===== tab 切换回调 =====
     def on_tab_changed(self, index: int):
@@ -208,55 +257,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
         """切换为 JSN 视图"""
         self.current_hand_model = self.jsn_label_dict
         self.current_hand_label = self.LB_HandModel_JSN
-
-        # 更新当前 L/R 对应的 ComboBox 文本
-        for item in self.current_hand_model:
-            item['CB'].setCurrentText(str(item[f'Score_{self.current_LorR}']))
-
-        self.update_hand(self.current_hand_model,
-                         highlight_idx=None,
-                         LorR=self.current_LorR,
-                         target_label=self.current_hand_label)
+        self.sync_lr_radio_buttons()
+        self.refresh_current_view()
 
     def switch_to_be_view(self):
         """切换为 BE 视图"""
         self.current_hand_model = self.be_label_dict
         self.current_hand_label = self.LB_HandModel_BE
-
-        for item in self.current_hand_model:
-            item['CB'].setCurrentText(str(item[f'Score_{self.current_LorR}']))
-
-        self.update_hand(self.current_hand_model,
-                         highlight_idx=None,
-                         LorR=self.current_LorR,
-                         target_label=self.current_hand_label)
+        self.sync_lr_radio_buttons()
+        self.refresh_current_view()
 
     def LorR_change(self, LorR):
+        """
+        左右手切换时调用：
+        - 更新 current_LorR
+        - 同步两个 tab 的 Radio Button
+        - 刷新当前 tab 的 combobox + 手图
+        """
         self.current_LorR = LorR
-        for item in self.current_hand_model:
-            if item[f'Score_{LorR}'] == None or item[f'Score_{LorR}'] == '':
-                item['CB'].setCurrentIndex(-1)
-                item[f'Score_{LorR}'] = None
-            else:
-                item['CB'].setCurrentText(str(item[f'Score_{LorR}']))
-        self.update_hand(self.current_hand_model,
-                         highlight_idx=None,
-                         LorR=LorR,
-                         target_label=self.current_hand_label)
+        self.sync_lr_radio_buttons()
+        self.refresh_current_view()
 
     def select_joint(self, idx):
-        self.update_hand(self.current_hand_model,
-                         highlight_idx=idx,
-                         LorR=self.current_LorR,
-                         target_label=self.current_hand_label)
+        """
+        选择具体关节（Radio Button 触发），用于高亮。
+        JSN / BE 共用一个 current_highlight_idx。
+        """
+        self.current_joint_idx = idx
+        self.current_highlight_idx = idx
+        self.refresh_current_view()
 
     def change_score(self, idx):
+        """
+        combobox 改变时更新 Score_L / Score_R，然后刷新显示。
+        """
         obj = self.sender()
         self.current_hand_model[idx][f'Score_{self.current_LorR}'] = obj.currentText()
-        self.update_hand(self.current_hand_model,
-                         highlight_idx=idx,
-                         LorR=self.current_LorR,
-                         target_label=self.current_hand_label)
+        self.current_highlight_idx = idx
+        self.refresh_current_view()
 
     # ========= 事件过滤器 =========
     def eventFilter(self, obj, event):
@@ -264,7 +302,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
             # 谁在当前 Tab（也就是可见），谁 resize 就在谁上重画
             self.current_hand_label = obj
             self.update_hand(self.current_hand_model,
-                             highlight_idx=None,
+                             highlight_idx=self.current_highlight_idx,
                              LorR=self.current_LorR,
                              target_label=obj)
         return super().eventFilter(obj, event)
@@ -325,7 +363,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
             self.hand_svg_renderer.render(painter, target_rect)
 
         # ====== 这里根据 JSN / BE 选择圆圈颜色 ======
-        # JSN: 绿圈；BE: 蓝圈
         if label is self.LB_HandModel_JSN:
             base_color = QColor(0, 200, 0)  # 绿色
         elif label is self.LB_HandModel_BE:
@@ -355,7 +392,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
                 pen_circle = QPen(base_color)
                 pen_circle.setWidth(max(5, int(3 * scale)))
                 painter.setPen(pen_circle)
-                # 高亮时用同色半透明填充
                 highlight_brush = QColor(base_color.red(),
                                          base_color.green(),
                                          base_color.blue(), 100)
@@ -429,7 +465,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
 
         self.LW_Files.setCurrentRow(0)
 
-
     def on_file_selected(self, row: int):
         if row < 0:
             return
@@ -439,9 +474,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
         path = item.data(QtCore.Qt.UserRole) or item.text()
         if path and os.path.exists(path):
             self.write_to_scorer()
-            print('saved', self.case_path)
             self.show_xray_vtk(path)
             self.load_score()
+            self.update_reviewed_label()
 
     def show_xray_vtk(self, filepath: str):
         self.case_path = filepath
@@ -453,11 +488,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
 
         if ext == ".dcm":
             reader = vtk.vtkDICOMImageReader()
-
             case_id = str(random.randint(10000, 99999))
             case_name = os.path.basename(self.case_path)[:-4]
             detectiontime = 'unknown'
-
             reader.SetFileName(filepath)
         elif ext == ".bmp":
             reader = vtk.vtkBMPReader()
@@ -474,11 +507,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
             return
 
         reader.Update()
+        image_data = reader.GetOutput()
+        min_val, max_val = image_data.GetScalarRange()
+
+        window = max_val - min_val
+        if window <= 0:
+            window = 1.0
+        level = (max_val + min_val) / 2.0
 
         window_level = vtk.vtkImageMapToWindowLevelColors()
-        window_level.SetInputConnection(reader.GetOutputPort())
-        window_level.SetWindow(1500)
-        window_level.SetLevel(750)
+        window_level.SetInputData(image_data)
+        window_level.SetWindow(window)
+        window_level.SetLevel(level)
         window_level.Update()
 
         image_actor = vtk.vtkImageActor()
@@ -486,26 +526,49 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
 
         self.renderer.RemoveAllViewProps()
         self.renderer.AddActor(image_actor)
+
+        camera = self.renderer.GetActiveCamera()
+        camera.ParallelProjectionOn()
         self.renderer.ResetCamera()
-        self.renderer.GetActiveCamera().Zoom(1.2)
 
+        extent = image_data.GetExtent()
+        spacing = image_data.GetSpacing()
+        img_w = (extent[1] - extent[0] + 1) * spacing[0]
+        img_h = (extent[3] - extent[2] + 1) * spacing[1]
+
+        if img_w > 0 and img_h > 0:
+            rw = max(self.vtkWidget.width(), 1)
+            rh = max(self.vtkWidget.height(), 1)
+
+            view_aspect = rw / rh
+            img_aspect = img_w / img_h
+
+            if view_aspect > img_aspect:
+                scale = img_h / 2.0
+            else:
+                scale = img_w / (2.0 * view_aspect)
+
+            camera.SetParallelScale(scale)
+
+        self.renderer.ResetCameraClippingRange()
         self.vtkWidget.GetRenderWindow().Render()
-        self.tabWidget.setEnabled(True)
 
+
+        # ================== scorer 初始化 ==================
         if self.case_path not in self.scorer.get_case_path_list():
-            print('created')
             svdh_scores = [None for _ in range(31)]
             self.scorer.new_info(self.case_path,
                                  case_id,
                                  case_name,
-                                 detectiontime,'L',
+                                 detectiontime, 'L',
                                  *svdh_scores)
             self.scorer.new_info(self.case_path,
                                  case_id,
                                  case_name,
-                                 detectiontime,'R',
+                                 detectiontime, 'R',
                                  *svdh_scores)
 
+        self.tabWidget.setEnabled(True)
 
     def open_xray_file(self):
         fname, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -519,17 +582,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
 
     # ========= 分数的保存 / 读取 / 导出 =========
     def save_scores_to_json(self):
-        self.write_to_scorer()
         """
         将当前 self.scorer 中的打分结果保存为 JSON 文件
         """
+        self.write_to_scorer()
+
         default_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S.json")
         default_path = f'RAScorer_{default_name}'
 
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
             self,
             "保存打分为 JSON",
-            default_path,  # 这里设置默认文件名
+            default_path,
             "JSON 文件 (*.json);;所有文件 (*)"
         )
         if not path:
@@ -563,25 +627,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
             return
 
         try:
-            # 用 Scorer.load 读入
             new_scorer = Scorer.load(path)
             self.scorer = new_scorer
-            self.scorer.show()
-            self.case_path = self.scorer.recent_path
-            print(self.case_path)
 
-            # 用已有分数刷新列表（只按 case_path 显示）
+            # 使用 recent_path 作为当前 case
+            self.case_path = getattr(self.scorer, "recent_path", "")
+
             self.LW_Files.clear()
-            for case_path in self.scorer.get_case_path_list():
-                item = QtWidgets.QListWidgetItem(case_path)
-                item.setData(QtCore.Qt.UserRole, case_path)
+            current_row = 0
+            for cp in self.scorer.get_case_path_list():
+                item = QtWidgets.QListWidgetItem(cp)
+                item.setData(QtCore.Qt.UserRole, cp)
                 self.LW_Files.addItem(item)
+                if cp == self.case_path:
+                    current_row = self.LW_Files.count() - 1
 
-            for i in range(self.LW_Files.count()):
-                item = self.LW_Files.item(i)
-                stored_path = item.data(QtCore.Qt.UserRole)
-                if stored_path == case_path:
-                    self.LW_Files.setCurrentRow(i)
+            if self.LW_Files.count() > 0:
+                self.LW_Files.setCurrentRow(current_row)
 
             QtWidgets.QMessageBox.information(
                 self,
@@ -600,16 +662,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
         """
         将当前 self.scorer 中的打分结果导出为 Excel（.xlsx）
         """
+
+        default_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S.xlsx")
+        default_path = f'RAScorer_{default_name}'
+
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
             self,
             "导出打分为 Excel",
-            "",
+            default_path,
             "Excel 文件 (*.xlsx);;所有文件 (*)"
         )
         if not path:
             return
 
-        # 如果用户没有写 .xlsx，自动补上
         if not path.lower().endswith(".xlsx"):
             path += ".xlsx"
 
@@ -627,6 +692,40 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
                 f"导出 Excel 失败：\n{e}"
             )
 
+    def update_reviewed_label(self, reviewed=None):
+        """
+        根据 reviewed 状态更新 LB_Reviewed 的样式：
+        - True: 红色 + 加粗
+        - False: 灰色 + 普通
+        如果 reviewed 为 None，则根据当前 case_path 去 scorer 里查询。
+        """
+        if reviewed is None:
+            if not self.case_path:
+                reviewed = False
+            else:
+                reviewed = self.scorer.get_case_reviewed_status(self.case_path)
+
+        font = self.LB_Reviewed.font()
+        if reviewed:
+            font.setBold(True)
+            self.LB_Reviewed.setFont(font)
+            self.LB_Reviewed.setStyleSheet("color: red;")
+        else:
+            font.setBold(False)
+            self.LB_Reviewed.setFont(font)
+            self.LB_Reviewed.setStyleSheet("color: gray;")
+
+    def on_reviewed_clicked(self):
+        """
+        点击 PB_Reviewed 时：
+        1. 切换当前 case_path 的全部 reviewed 字段
+        2. 更新 LB_Reviewed 的显示（红色加粗 / 灰色普通）
+        """
+        if not self.case_path:
+            return
+
+        new_status = self.scorer.toggle_reviewed(self.case_path)
+        self.update_reviewed_label(new_status)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@
   </property>
   <property name="font">
    <font>
-    <pointsize>10</pointsize>
+    <pointsize>12</pointsize>
    </font>
   </property>
   <property name="windowTitle">
@@ -37,23 +37,26 @@
      </layout>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,16">
+     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,14">
       <property name="spacing">
-       <number>2</number>
+       <number>0</number>
       </property>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout" stretch="2,1">
         <item>
-         <widget class="QLabel" name="LB_WindowPara">
+         <widget class="QLabel" name="LB_Reviewed">
           <property name="text">
-           <string>Window: </string>
+           <string>Reviewed</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="PB_WindowRest">
+         <widget class="QPushButton" name="PB_Reviewed">
           <property name="text">
-           <string>Rest</string>
+           <string>Reviewed</string>
           </property>
          </widget>
         </item>
@@ -69,8 +72,19 @@
       <property name="enabled">
        <bool>true</bool>
       </property>
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>24</width>
+        <height>24</height>
+       </size>
       </property>
       <widget class="QWidget" name="TB_JSN">
        <attribute name="title">
@@ -98,7 +112,7 @@
            <number>2</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,2">
+           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1">
             <item>
              <widget class="QRadioButton" name="RB_Left_JSN">
               <property name="text">
@@ -110,13 +124,6 @@
              <widget class="QRadioButton" name="RB_Right_JSN">
               <property name="text">
                <string>Right</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="LB_Reviewed_JSN">
-              <property name="text">
-               <string>Reviewed: False</string>
               </property>
              </widget>
             </item>
@@ -138,11 +145,14 @@
                  <number>1</number>
                 </property>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_3">
+                 <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_1">
                     <property name="sizePolicy">
-                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
@@ -155,7 +165,7 @@
                   <item>
                    <widget class="QComboBox" name="CB_JSN_1">
                     <property name="sizePolicy">
-                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
@@ -190,9 +200,21 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_4">
+                 <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
+                  <property name="sizeConstraint">
+                   <enum>QLayout::SetDefaultConstraint</enum>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_2">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>MCP-I</string>
                     </property>
@@ -200,6 +222,12 @@
                   </item>
                   <item>
                    <widget class="QComboBox" name="CB_JSN_2">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <item>
                      <property name="text">
                       <string>0</string>
@@ -230,9 +258,18 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_5">
+                 <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_3">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>MCP-M</string>
                     </property>
@@ -270,9 +307,18 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_6">
+                 <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_4">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>MCP-R</string>
                     </property>
@@ -310,9 +356,18 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_7">
+                 <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_5">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>MCP-S</string>
                     </property>
@@ -350,9 +405,18 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_8">
+                 <layout class="QHBoxLayout" name="horizontalLayout_8" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_6">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>PIP-I</string>
                     </property>
@@ -390,9 +454,18 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_9">
+                 <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_7">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>PIP-M</string>
                     </property>
@@ -430,9 +503,18 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_10">
+                 <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_8">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>PIP-R</string>
                     </property>
@@ -470,7 +552,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_11">
+                 <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_9">
                     <property name="text">
@@ -510,7 +595,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_12">
+                 <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_10">
                     <property name="text">
@@ -550,7 +638,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_13">
+                 <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="2,1">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_11">
                     <property name="text">
@@ -590,7 +681,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_14">
+                 <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_12">
                     <property name="text">
@@ -630,7 +724,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_15">
+                 <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_13">
                     <property name="text">
@@ -670,7 +767,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_16">
+                 <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_14">
                     <property name="text">
@@ -710,7 +810,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_17">
+                 <layout class="QHBoxLayout" name="horizontalLayout_17" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_JSN_15">
                     <property name="text">
@@ -764,13 +867,6 @@
                 </property>
                </spacer>
               </item>
-              <item>
-               <widget class="QPushButton" name="PB_Reviewed_JSN">
-                <property name="text">
-                 <string>Reviewed</string>
-                </property>
-               </widget>
-              </item>
              </layout>
             </item>
             <item>
@@ -818,7 +914,7 @@
            <number>2</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_19" stretch="1,1,2">
+           <layout class="QHBoxLayout" name="horizontalLayout_19" stretch="1,1">
             <item>
              <widget class="QRadioButton" name="RB_Left_BE">
               <property name="text">
@@ -830,13 +926,6 @@
              <widget class="QRadioButton" name="RB_Right_BE">
               <property name="text">
                <string>Right</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="LB_Reviewed_BE">
-              <property name="text">
-               <string>Reviewed: False</string>
               </property>
              </widget>
             </item>
@@ -858,7 +947,10 @@
                  <number>1</number>
                 </property>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_21">
+                 <layout class="QHBoxLayout" name="horizontalLayout_21" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_1">
                     <property name="text">
@@ -898,7 +990,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_22">
+                 <layout class="QHBoxLayout" name="horizontalLayout_22" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_2">
                     <property name="text">
@@ -938,7 +1033,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_23">
+                 <layout class="QHBoxLayout" name="horizontalLayout_23" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_3">
                     <property name="text">
@@ -978,7 +1076,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_24">
+                 <layout class="QHBoxLayout" name="horizontalLayout_24" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_4">
                     <property name="text">
@@ -1018,7 +1119,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_25">
+                 <layout class="QHBoxLayout" name="horizontalLayout_25" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_5">
                     <property name="text">
@@ -1058,7 +1162,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_26">
+                 <layout class="QHBoxLayout" name="horizontalLayout_26" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_6">
                     <property name="text">
@@ -1098,7 +1205,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_27">
+                 <layout class="QHBoxLayout" name="horizontalLayout_27" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_7">
                     <property name="text">
@@ -1138,7 +1248,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_28">
+                 <layout class="QHBoxLayout" name="horizontalLayout_28" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_8">
                     <property name="text">
@@ -1178,7 +1291,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_29">
+                 <layout class="QHBoxLayout" name="horizontalLayout_29" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_9">
                     <property name="text">
@@ -1218,7 +1334,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_30">
+                 <layout class="QHBoxLayout" name="horizontalLayout_30" stretch="2,1">
+                  <property name="spacing">
+                   <number>3</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_10">
                     <property name="text">
@@ -1258,7 +1377,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_31">
+                 <layout class="QHBoxLayout" name="horizontalLayout_31" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_11">
                     <property name="text">
@@ -1298,7 +1420,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_32">
+                 <layout class="QHBoxLayout" name="horizontalLayout_32" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_12">
                     <property name="text">
@@ -1338,7 +1463,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_33">
+                 <layout class="QHBoxLayout" name="horizontalLayout_33" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_13">
                     <property name="text">
@@ -1378,7 +1506,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_34">
+                 <layout class="QHBoxLayout" name="horizontalLayout_34" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_14">
                     <property name="text">
@@ -1418,7 +1549,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_36">
+                 <layout class="QHBoxLayout" name="horizontalLayout_36" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_15">
                     <property name="text">
@@ -1458,7 +1592,10 @@
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_35">
+                 <layout class="QHBoxLayout" name="horizontalLayout_35" stretch="2,1">
+                  <property name="spacing">
+                   <number>4</number>
+                  </property>
                   <item>
                    <widget class="QRadioButton" name="RB_BE_16">
                     <property name="text">
@@ -1512,13 +1649,6 @@
                 </property>
                </spacer>
               </item>
-              <item>
-               <widget class="QPushButton" name="PB_Reviewed_BE">
-                <property name="text">
-                 <string>Reviewed</string>
-                </property>
-               </widget>
-              </item>
              </layout>
             </item>
             <item>
@@ -1555,8 +1685,6 @@
    <addaction name="action_Output"/>
    <addaction name="action_Input"/>
    <addaction name="separator"/>
-   <addaction name="action_Next"/>
-   <addaction name="action_Before"/>
   </widget>
   <action name="action_Open">
    <property name="text">

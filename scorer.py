@@ -48,7 +48,7 @@ class Scorer:
         self.recent_idx += 1
 
     def show(self):
-        print(self.score_df.to_dict())
+        print(self.score_df)
 
     # ---------- 保存 ----------
     def save(self, save_path):
@@ -102,6 +102,34 @@ class Scorer:
         scorer.recent_path = data["recent_path"]
         scorer.score_df = pd.DataFrame(data["score_df"])
         return scorer
+
+    def get_case_reviewed_status(self, case_path):
+        """
+        返回该 case_path 是否“全部 reviewed = True”。
+        如果没有找到行，则返回 False。
+        """
+        df_case = self.score_df[self.score_df["case_path"] == case_path]
+        if df_case.empty:
+            return False
+        return bool(df_case["reviewed"].all())
+
+    def toggle_reviewed(self, case_path):
+        """
+        将该 case_path 的所有 reviewed 字段整体取反：
+        - 如果当前全是 True -> 全部改为 False
+        - 否则 -> 全部改为 True
+        返回新的状态（True/False）
+        """
+        df = self.score_df
+        mask = (df["case_path"] == case_path)
+        if not mask.any():
+            return False
+
+        current_all_true = bool(df.loc[mask, "reviewed"].all())
+        new_value = not current_all_true
+        df.loc[mask, "reviewed"] = new_value
+        return new_value
+
 
 
 if __name__ == "__main__":
