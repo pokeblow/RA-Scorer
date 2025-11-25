@@ -6,163 +6,230 @@ import os
 import time
 import json
 
-BASE_TEMPLATE = ['case_path', 'case_id', 'case_name', 'detection_time', 'reviewed']
-SVDH_TEMPLATE = [
-    'LorR',
+SVDH_TEMPLATE = {
+    'case_path': '',
+    'case_id': 'null',
+    'case_name': 'null',
+    'reviewed': False,
+    'LorR': '',
 
-    # ===== JSN =====
-    'JSN_MCP_T', 'JSN_MCP_I', 'JSN_MCP_M', 'JSN_MCP_R', 'JSN_MCP_S',
-    'JSN_PIP_I', 'JSN_PIP_M', 'JSN_PIP_R', 'JSN_PIP_S',
-    'JSN_CMC_M', 'JSN_CMC_R', 'JSN_CMC_S',
-    'JSN_S_TmTd', 'JSN_S_C', 'JSN_S_Ra',
+    'JSN': {
+        'MCP-T': None, 'MCP-I': None, 'MCP-M': None, 'MCP-R': None, 'MCP-S': None,
+        'PIP-I': None, 'PIP-M': None, 'PIP-R': None, 'PIP-S': None,
+        'CMC-M': None, 'CMC-R': None, 'CMC-S': None,
+        'STT': None, 'SC': None, 'SR': None
+    },
 
-    # ===== BE =====
-    'BE_MCP_T', 'BE_MCP_I', 'BE_MCP_M', 'BE_MCP_R', 'BE_MCP_S',
-    'BE_IP',
-    'BE_PIP_I', 'BE_PIP_M', 'BE_PIP_R', 'BE_PIP_S',
-    'BE_CMC_T',
-    'BE_Tm', 'BE_S', 'BE_L', 'BE_Ul', 'BE_Ra'
-]
+    'BE': {
+        'MCP-T': None, 'MCP-I': None, 'MCP-M': None, 'MCP-R': None, 'MCP-S': None,
+        'IP': None, 'PIP-I': None, 'PIP-M': None, 'PIP-R': None, 'PIP-S': None,
+        'CMC-T': None, 'Tm': None, 'S': None, 'L': None, 'U': None, 'R': None
+    }
+}
+
 
 class Scorer:
-    def __init__(self, score_type='svdh'):
+    def __init__(self):
         self.datetime = time.time()
         self.tmp_info = []
         self.recent_idx = 0
         self.recent_path = ''
 
-        if score_type == 'svdh':
-            self.score_df = pd.DataFrame(columns=BASE_TEMPLATE + SVDH_TEMPLATE)
+        self.score_repo = []  # 所有 case 的评分
+        self.mapping = []
+        self.index_map = {}   # (path, LorR) → index
+        self.count_idx = 0
+
+    def get_file_list(self):
+        if len(self.score_repo) == 0:
+            return None
         else:
-            self.score_df = None
+            file_list = []
+            for i in self.score_repo:
+                if i['case_path'] not in file_list:
+                    file_list.append(i['case_path'])
 
-    def update_score(self, case_path, LorR, *args):
-        self.find_row(case_path, LorR)
-        self.score_df.loc[self.recent_idx, self.score_df.columns[6:]] = list(args)
+            return file_list
+
+    def new_info(self, case_path, case_id, case_name, LorR, JSN_dict=None, BE_dict=None):
+        # 深拷贝模板，避免各 case 数据互相污染
+        score_dict = json.loads(json.dumps(SVDH_TEMPLATE))
+
+        score_dict['case_path'] = case_path
+        score_dict['case_id'] = case_id
+        score_dict['case_name'] = case_name
+        score_dict['LorR'] = LorR
+
+        for key in score_dict['JSN'].keys():
+            if JSN_dict == None:
+                score_dict['JSN'][key] = None
+            else:
+                score_dict['JSN'][key] = JSN_dict.get(key)
+
+        for key in score_dict['BE'].keys():
+            if BE_dict == None:
+                score_dict['BE'][key] = None
+            else:
+                score_dict['BE'][key] = BE_dict.get(key)
+
+        self.index_map[(case_path, LorR)] = self.count_idx
+        self.score_repo.append(score_dict)
+        self.count_idx += 1
+
+    def update_info(self, case_path, LorR, JSN_dict, BE_dict):
+        idx = self.index_map.get((case_path, LorR), -1)
+        score_dict = self.score_repo[idx]
+
+        for key in score_dict['JSN'].keys():
+            score_dict['JSN'][key] = JSN_dict.get(key)
+
+        for key in score_dict['BE'].keys():
+            score_dict['BE'][key] = BE_dict.get(key)
+
+    def set_reviewed(self, case_path, state):
+        idx = self.index_map.get((case_path, 'L'), -1)
+        score_dict = self.score_repo[idx]
+        score_dict['reviewed'] = state
+
+        idx = self.index_map.get((case_path, 'R'), -1)
+        score_dict = self.score_repo[idx]
+        score_dict['reviewed'] = state
+
+    def get_reviewed(self, case_path):
+        idx = self.index_map.get((case_path, 'L'), -1)
+        score_dict = self.score_repo[idx]
+        return score_dict['reviewed']
 
 
-    def new_info(self, case_path, case_id, case_name, detection_time, LorR, *args):
-        score_row = [case_path, case_id, case_name, detection_time, False, LorR] + list(args)
-        self.score_df.loc[len(self.score_df)] = score_row
-        self.recent_path = case_path
-        self.recent_idx += 1
+    def get_info(self, case_path, LorR):
+        idx = self.index_map.get((case_path, LorR), -1)
+        score_dict = self.score_repo[idx]
+        return score_dict['JSN'], score_dict['BE']
 
-    def show(self):
-        print(self.score_df)
-
-    # ---------- 保存 ----------
-    def save(self, save_path):
-        json_data = {
-            'datetime': self.datetime,
-            'recent_path': self.recent_path,
-            'recent_idx': int(self.recent_idx),
-            'score_df': self.score_df.to_dict(orient="records"),
+    # ====================================================
+    #  保存当前状态到 JSON 文件
+    # ====================================================
+    def save_to_json(self, path):
+        data = {
+            "score_repo": self.score_repo,
+            "count_idx": self.count_idx,
+            "datetime": self.datetime,
         }
 
-        with open(save_path, "w", encoding="utf-8") as f:
-            json.dump(json_data, f, ensure_ascii=False, indent=4)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
-        print(f"Saved to {save_path}")
+        print(f"[OK] 已保存到 {path}")
 
-    def output(self, output_path):
-        """
-        将 score_df 和 review_df 导出到同一个 Excel 文件，两个 sheet
-        """
-        with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
-            self.score_df.to_excel(writer, index=False, sheet_name='score')
 
-        print(f"Excel saved to {output_path}")
-
-    def find_row(self, case_path, LorR):
-        df = self.score_df
-        result = df[(df["case_path"] == case_path) & (df["LorR"] == LorR)]
-
-        if result.empty:
-            raise IndexError("Not find row")
-        else:
-            self.recent_idx = result.index[0]
-            self.recent_path = case_path
-        return result.to_dict(orient="records")
-
-    def get_case_path_list(self):
-
-        return self.score_df["case_path"].drop_duplicates().tolist()
-
-    def reviewed(self):
-        self.score_df.at[self.recent_idx, 'reviewed'] = True
-
-    # ---------- 读取 ----------
-    @classmethod
-    def load(cls, json_path):
-        with open(json_path, "r", encoding="utf-8") as f:
+    # ====================================================
+    #  从 JSON 读取并恢复状态
+    # ====================================================
+    def load_from_json(self, path):
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        scorer = cls()
-        scorer.datetime = data["datetime"]
-        scorer.recent_path = data["recent_path"]
-        scorer.score_df = pd.DataFrame(data["score_df"])
-        return scorer
+        # 恢复基本内容
+        self.score_repo = data.get("score_repo", [])
+        self.count_idx = data.get("count_idx", len(self.score_repo))
+        self.datetime = data.get("datetime", 0)
 
-    def get_case_reviewed_status(self, case_path):
-        """
-        返回该 case_path 是否“全部 reviewed = True”。
-        如果没有找到行，则返回 False。
-        """
-        df_case = self.score_df[self.score_df["case_path"] == case_path]
-        if df_case.empty:
-            return False
-        return bool(df_case["reviewed"].all())
+        # 自动重建 index_map
+        self.index_map = {}
+        for idx, item in enumerate(self.score_repo):
+            key = (item["case_path"], item["LorR"])
+            self.index_map[key] = idx
 
-    def toggle_reviewed(self, case_path):
-        """
-        将该 case_path 的所有 reviewed 字段整体取反：
-        - 如果当前全是 True -> 全部改为 False
-        - 否则 -> 全部改为 True
-        返回新的状态（True/False）
-        """
-        df = self.score_df
-        mask = (df["case_path"] == case_path)
-        if not mask.any():
-            return False
+        print(f"[OK] 已从 {path} 恢复状态")
 
-        current_all_true = bool(df.loc[mask, "reviewed"].all())
-        new_value = not current_all_true
-        df.loc[mask, "reviewed"] = new_value
-        return new_value
+    def output_to_excel(self, path):
+        rows = []
+
+        for item in self.score_repo:
+            base_info = {
+                "case_path": item["case_path"],
+                "case_id": item["case_id"],
+                "case_name": item["case_name"],
+                "reviewed": item["reviewed"],
+                "LorR": item["LorR"],
+            }
+
+            # 展开 JSN
+            jsn_info = {f"JSN_{k}": v for k, v in item["JSN"].items()}
+
+            # 展开 BE
+            be_info = {f"BE_{k}": v for k, v in item["BE"].items()}
+
+            # 合并成一行
+            row = {**base_info, **jsn_info, **be_info}
+            rows.append(row)
+
+        df = pd.DataFrame(rows)
+
+        # 导出 Excel（一个 sheet）
+        df.to_excel(path, index=False, sheet_name="Scores")
+
+        print(f"[OK] 已成功导出到 Excel：{path}")
 
 
-
+# ================================
+#        ⭐ 测试代码 ⭐
+# ================================
 if __name__ == "__main__":
     scorer = Scorer()
 
-    for i in range(5):
-        scorer.set_base_info(
-            case_path=f"/data/00{i}.png",
-            case_id=f"00{i}",
-            case_name=f"Patient_00{i}",
-            detection_time="2025-01-01",
+    # -------- 新建 L / R 两个记录 --------
+    for side in ['L', 'R']:
+        JSN = {k: random.randint(0, 4) for k in SVDH_TEMPLATE['JSN'].keys()}
+        BE = {k: random.randint(0, 4) for k in SVDH_TEMPLATE['BE'].keys()}
+
+        scorer.new_info(
+            case_path="/data/case001.png",
+            case_id="001",
+            case_name="case001",
+            LorR=side,
+            JSN_dict=JSN,
+            BE_dict=BE
         )
-        svdh_scores = [None for _ in range(31)]
-        scorer.set_score_info('R', *svdh_scores)
 
-        svdh_scores = [random.randint(0, 5) for _ in range(31)]
-        scorer.set_score_info('R', *svdh_scores)
+    print("===== 初始评分 =====")
+    for side in ['L', 'R']:
+        jsn, be = scorer.get_info("/data/case001.png", side)
+        print(f"{side} JSN:", jsn)
+        print(f"{side} BE :", be)
 
-    # I/O
-    scorer.save("demo_scores.json")
-    scorer.output("demo_scores.xlsx")
+    # -------- 更新 L 一次 --------
+    JSN2 = {k: random.randint(0, 4) for k in SVDH_TEMPLATE['JSN'].keys()}
+    BE2 = {k: random.randint(0, 4) for k in SVDH_TEMPLATE['BE'].keys()}
 
-    # function
-    case_path_list = scorer.get_case_path_list()
-    print(case_path_list)
+    scorer.update_info(
+        case_path="/data/case001.png",   # 注意这里路径要与 new_info 一致
+        LorR="L",
+        JSN_dict=JSN2,
+        BE_dict=BE2
+    )
 
-    scorer.find_row('/data/002.png', 'R')
-    scorer.update_score('BE_Ra', 100000)
-    scorer.reviewed()
+    print("\n===== 更新后评分 (L) =====")
+    jsn, be = scorer.get_info("/data/case001.png", "L")
+    print("L JSN:", jsn)
+    print("L BE :", be)
 
-    scorer.show()
+    # -------- 保存到 JSON --------
+    scorer.save_to_json("test.json")
+    print("\n已保存到 test.json")
 
-    # 测试读取
-    new_scorer = Scorer.load("demo_scores.json")
-    print("\nLoaded from JSON:")
-    new_scorer.show()
+    # -------- 新建空 Scorer，加载 JSON --------
+    scorer2 = Scorer()
+    scorer2.load_from_json("test.json")
+
+    print("\n===== 恢复后的信息 =====")
+    for side in ['L', 'R']:
+        jsn, be = scorer2.get_info("/data/case001.png", side)
+        print(f"{side} JSN:", jsn)
+        print(f"{side} BE :", be)
+
+    print("\nindex_map:", scorer2.index_map)
+
+    # -------- 导出 Excel --------
+    scorer2.output_to_excel("scores.xlsx")
+    print("\nExcel 已导出为 scores.xlsx")
