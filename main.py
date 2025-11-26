@@ -26,12 +26,13 @@ JSN_POINT = {
     'PIP-R': (76, 149),
     'PIP-S': (19, 201),
 
-    'CMC-M': (129, 531),
-    'CMC-R': (154, 484),
-    'CMC-S': (128, 489),
-    'STT': (62, 440),
-    'SC': (87, 437),
-    'SR': (111, 436),
+    'STT': (160, 484),
+    'SC': (128, 500),
+    'SR': (129, 531),
+
+    'CMC-M': (121, 436),
+    'CMC-R': (87, 420),
+    'CMC-S': (58, 440),
 }
 
 BE_POINT = {
@@ -640,6 +641,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_RAScorer):
         self.RB_BE.setEnabled(state)
 
         self.Score_Model.setEnabled(state)
+        self.PB_Reviewed.setEnabled(state)
+        self.LB_Reviewed.setEnabled(state)
 
     def update_reviewed(self):
         current_path = self.file_paths[self.current_case]

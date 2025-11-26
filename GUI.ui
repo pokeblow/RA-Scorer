@@ -99,14 +99,14 @@
         <item>
          <widget class="QPushButton" name="PB_All_Pos">
           <property name="text">
-           <string>All Pos</string>
+           <string>All Neg</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="PB_All_Neg">
           <property name="text">
-           <string>All Neg</string>
+           <string>All Pos</string>
           </property>
          </widget>
         </item>
